@@ -162,10 +162,10 @@ static char *read_file(const char *file){
 }
 
 static int create_file(const char *source){
-    FILE *fp = fopen("Lexical Analysis.txt", "w");
+    FILE *fp = fopen("Symbol Table", "w");
 
     if (fp == NULL) {
-        perror("Lexical Analysis.txt");
+        perror("Symbol Table.txt");
         return 0;
     }
 
@@ -179,12 +179,21 @@ static int create_file(const char *source){
     do {
         tok = get_next_token(&lex);
         if (tok.type != TOK_EOF) {
+            // show line breaks inside a lexeme (block comments) as spaces
+            char shown[256];
+            size_t k;
+            for (k = 0; tok.lexeme[k] != '\0'; k++) {
+                char ch = tok.lexeme[k];
+                shown[k] = (ch == '\n' || ch == '\r') ? ' ' : ch;
+            }
+            shown[k] = '\0';
+
             fprintf(fp, "%-24s | %-18s | %s\n",
-                    token_type_to_string(tok.type), tok.lexeme, token_classification(tok.type));
+                    token_type_to_string(tok.type), shown, token_classification(tok.type));
         }
     } while (tok.type != TOK_EOF);
 
-    printf("File \"Lexical Analysis.txt\" created");
+    printf("File \"Symbol Table.txt\" created");
 
     fclose(fp);
     return 1;
@@ -325,6 +334,15 @@ static const char *token_classification(TokenType type) {
             return "Logical operator";
         
         
+        case TOK_NOISE:
+            return "Noise word";
+
+        case TOK_COMMENT_LINE:
+            return "Comment (line)";
+
+        case TOK_COMMENT_BLOCK:
+            return "Comment (block)";
+
         case TOK_EOF:
             return "Special (EOF)";
         case TOK_ERROR:
@@ -381,6 +399,9 @@ const char *token_type_to_string(TokenType type) {
         case TOK_LOG_AND: return "TOK_LOG_AND";
         case TOK_LOG_OR: return "TOK_LOG_OR";
         case TOK_LOG_NAY: return "TOK_LOG_NAY";
+        case TOK_NOISE: return "TOK_NOISE";
+        case TOK_COMMENT_LINE: return "TOK_COMMENT_LINE";
+        case TOK_COMMENT_BLOCK: return "TOK_COMMENT_BLOCK";
         case TOK_EOF: return "TOK_EOF";
         case TOK_ERROR: return "TOK_ERROR";
         default: return "UNKNOWN";
@@ -604,9 +625,8 @@ Token get_next_token(Lexer *l) {
                     return make_token(TOK_ERROR, l);
                 } else if (c == ']' || c == '\n') {
                     if (c == ']') advance(l);
-                    // Comment consumed - reset to START
-                    state = STATE_START;
-                    l->start_pos = l->pos;
+                    // Line comment ends at ']' or end of line
+                    return make_token(TOK_COMMENT_LINE, l);
                 } else {
                     advance(l);
                 }
@@ -687,9 +707,8 @@ Token get_next_token(Lexer *l) {
             case STATE_BLOCK_S2:
                 if (peek(l) == ']') {
                     advance(l);
-                    // reset to start 
-                    state = STATE_START;
-                    l->start_pos = l->pos;
+                    // Block comment closed by 'end gloss]'
+                    return make_token(TOK_COMMENT_BLOCK, l);
                 } else {
                     state = STATE_BLOCK_COMMENT;
                 }
@@ -899,8 +918,7 @@ Token get_next_token(Lexer *l) {
                 break;
             case STATE_CLARITY:
                 if (is_delimiter(peek(l))) {
-                    state = STATE_START;
-                    l->start_pos = l->pos;
+                    return make_token(TOK_NOISE, l);
                 } else {
                     state = STATE_ERROR;
                 }
@@ -1038,8 +1056,7 @@ Token get_next_token(Lexer *l) {
                 break;
             case STATE_HARK:
                 if (is_delimiter(peek(l))) {
-                    state = STATE_START;
-                    l->start_pos = l->pos;
+                    return make_token(TOK_NOISE, l);
                 } else {
                     state = STATE_ERROR;
                 }
@@ -1107,8 +1124,7 @@ Token get_next_token(Lexer *l) {
             case STATE_INDEED:
                 // indeed is a NOISE WORD - skip and reset to START
                 if (is_delimiter(peek(l))) {
-                    state = STATE_START;
-                    l->start_pos = l->pos;
+                    return make_token(TOK_NOISE, l);
                 } else {
                     state = STATE_ERROR;
                 }
@@ -1513,8 +1529,7 @@ Token get_next_token(Lexer *l) {
             // speaks (noise)
             case STATE_SPEAKS:
                 if (is_delimiter(peek(l))) {
-                    state = STATE_START;
-                    l->start_pos = l->pos;
+                    return make_token(TOK_NOISE, l);
                 } else {
                     state = STATE_ERROR;
                 }
@@ -1549,8 +1564,7 @@ Token get_next_token(Lexer *l) {
             case STATE_THE:
                 // skip and reset to start
                 if (is_delimiter(peek(l))) {
-                    state = STATE_START;
-                    l->start_pos = l->pos;
+                    return make_token(TOK_NOISE, l);
                 } else {
                     state = STATE_ERROR;
                 }
@@ -1618,8 +1632,7 @@ Token get_next_token(Lexer *l) {
             case STATE_VERILY:
                 // skip and reset to start
                 if (is_delimiter(peek(l))) {
-                    state = STATE_START;
-                    l->start_pos = l->pos;
+                    return make_token(TOK_NOISE, l);
                 } else {
                     state = STATE_ERROR;
                 }
@@ -1666,8 +1679,7 @@ Token get_next_token(Lexer *l) {
                 c = peek(l);
                 if (is_delimiter(c)) {
                     // skip and reset to start
-                    state = STATE_START;
-                    l->start_pos = l->pos;
+                    return make_token(TOK_NOISE, l);
                 } else if (c == 'o') {
                     advance(l);
                     state = STATE_WITHO;

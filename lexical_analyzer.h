@@ -71,7 +71,14 @@ typedef enum {
     
     // Special 
     TOK_EOF,
-    TOK_ERROR
+    TOK_ERROR,
+
+    // Noise
+    TOK_NOISE,
+
+    // Comments
+    TOK_COMMENT_LINE,
+    TOK_COMMENT_BLOCK
 } TokenType;
 
 // Token Structure 
