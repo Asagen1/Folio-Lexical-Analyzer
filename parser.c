@@ -57,6 +57,9 @@ static int is_data_type(TokenType t) {
             t == TOK_KW_LETTER);
 }
 
+static void parse_expression(void);
+static void parse_statement(void);
+
 static void parse_declaration_stmt(void) {
     advance_parser(); //consumes "let"
 
@@ -67,12 +70,53 @@ static void parse_declaration_stmt(void) {
         return;
     }
 
-    if (!match(TOK_IDENTIFIER, "Identifier expected after data type.");) 
+    if (!match(TOK_IDENTIFIER, "Identifier expected after data type.")) 
     return;
-    if (!match(TOK_ASSIGN_BE, "Keyword 'be' expected after identifier.");)
+    if (!match(TOK_ASSIGN_BE, "Keyword 'be' expected after identifier."))
     return;
 
     parse_expression(); //reads the value expression
 
-    match(TOK_PERIOD, "Period (.) expected to terminate statement.")
+    match(TOK_PERIOD, "Period (.) expected to terminate statement.");
+}
+
+static void parse_input_stmt(void) {
+    advance_parser();
+
+    if (current_token.type == TOK_KW_MEMBER) {
+        advance_parser();
+        parse_expression();
+        
+        if (!match(TOK_KW_OF, "Keyword 'of' expected in member access.")) 
+        return;
+    
+        if(!match(TOK_IDENTIFIER, "Identifier expected after 'of'."))
+        return;
+    } else {
+        if (!match(TOK_IDENTIFIER, "Identifier expected after 'hearken'."))
+        return;
+    }
+    match(TOK_PERIOD, "Period (.) expected to terminate statement.");
+}
+
+static void parse_output_stmt(void) {
+    advance_parser();
+
+    if (current_token.type == TOK_KW_TALE) {
+        advance_parser();
+    }
+
+    parse_expression();
+    match(TOK_PERIOD, "Period (.) expected to terminate statement.");
+}
+
+static void parse_assignment_stmt(void) {
+    advance_parser();
+
+    if(!match(TOK_ASSIGN_BECAME, "Keyword 'became' expected after identifier."))
+    return;
+
+    parse_expression();
+
+    match(TOK_PERIOD, "Period (.) expected to terminate statement.");
 }
