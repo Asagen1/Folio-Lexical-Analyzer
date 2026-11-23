@@ -100,4 +100,9 @@ Token get_next_token(Lexer *l);
 const char *token_type_to_string(TokenType type);
 void lexer(const char *filename);
 
+#define MAX_TOKENS 2048
+extern Token symbol_table[MAX_TOKENS];
+extern int symbol_table_count;
+
+
 #endif

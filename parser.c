@@ -8,10 +8,10 @@ static int error_count = 0;
 // moves to the next token in symbol_table[]
 static void advance_parser(void) {
     while (pos < symbol_table_count) {
-        current_token = symbol__table[pos++];
+        current_token = symbol_table[pos++];
 
         if (current_token.type == TOK_NOISE ||
-            current_token.type = TOK_COMMENT_LINE || 
+            current_token.type == TOK_COMMENT_LINE || 
             current_token.type == TOK_COMMENT_BLOCK) {
                 continue; //ignore comments and noise words
             }
@@ -45,7 +45,7 @@ static int match(TokenType expected, const char *err_msg) {
         return 1;
     }
 
-    printf("Syntax error near '%s' : %s\n", current_token.type == TOKEN_EOF ? "<EOF>" : current_token.lexeme, err_msg);
+    printf("Syntax error near '%s' : %s\n", current_token.type == TOK_EOF ? "<EOF>" : current_token.lexeme, err_msg);
     error_count++;
     panic_recover(); //skips to the delimiter to check for the next statements
     return 0;
@@ -61,15 +61,15 @@ static void parse_declaration_stmt(void) {
     advance_parser(); //consumes "let"
 
     if (is_data_type(current_token.type)) {
-        advance_parser()
+        advance_parser();
     } else {
         match(TOK_KW_MEASURE, "Data type (measure, fraction, truth, tale, letter) expected after 'let'.");
         return;
     }
 
-    if (!match(TOK_IDENTIFIER, "Identifier expected after data type.")) 
+    if (!match(TOK_IDENTIFIER, "Identifier expected after data type.");) 
     return;
-    if (!match(TOK_ASSIGN_BE, "Keyword 'b' expected after identifier."))
+    if (!match(TOK_ASSIGN_BE, "Keyword 'be' expected after identifier.");)
     return;
 
     parse_expression(); //reads the value expression

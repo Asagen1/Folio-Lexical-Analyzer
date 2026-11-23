@@ -1,4 +1,5 @@
 #include "lexical_analyzer.h"
+#include "syntax_analyzer.h"
 
 int main(){
     const char *input = "folio_input.fol";

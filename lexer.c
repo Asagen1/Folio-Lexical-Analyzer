@@ -177,18 +177,14 @@ static int create_file(const char *source){
     fprintf(fp, "%-24s | %-18s | %s\n", "Token Type", "Lexeme", "Classification");
     fprintf(fp, "-------------------------|--------------------|--------------------------\n");
 
+    symbol_table_count = 0;
     Token tok;
+    
     do {
         tok = get_next_token(&lex);
-        symbol_table_count = 0;
-        Token tok;
-
-        do {
-            tok = get_next_token(&lex);
-            if (symbol_table_count < MAX_TOKENS) {
-                symbol_table[symbol_table_count++] = tok; //saves each token to the array
-            }
-
+        if (symbol_table_count < MAX_TOKENS) {
+            symbol_table[symbol_table_count++] = tok; // saves each token to the array
+        }
         if (tok.type != TOK_EOF) {
             // show line breaks inside a lexeme (block comments) as spaces
             char shown[256];
