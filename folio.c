@@ -4,6 +4,7 @@ int main(){
     const char *input = "folio_input.fol";
 
     lexer(input);
+    parser("Symbol Table.txt");
     
     return 0;
 }

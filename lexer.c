@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "lexical_analyzer.h"
+Token symbol_table[MAX_TOKENS];
+int symbol_table_count;
 
 // DFA states 
 typedef enum {
@@ -178,6 +180,15 @@ static int create_file(const char *source){
     Token tok;
     do {
         tok = get_next_token(&lex);
+        symbol_table_count = 0;
+        Token tok;
+
+        do {
+            tok = get_next_token(&lex);
+            if (symbol_table_count < MAX_TOKENS) {
+                symbol_table[symbol_table_count++] = tok; //saves each token to the array
+            }
+
         if (tok.type != TOK_EOF) {
             // show line breaks inside a lexeme (block comments) as spaces
             char shown[256];
@@ -346,7 +357,7 @@ static const char *token_classification(TokenType type) {
         case TOK_EOF:
             return "Special (EOF)";
         case TOK_ERROR:
-            return "Error";
+            return "Invalid Identifier";
         
         default:
             return "Unknown";
