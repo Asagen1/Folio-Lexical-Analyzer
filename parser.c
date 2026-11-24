@@ -235,3 +235,36 @@ static void parse_add_expr(void) {
     }
 }
 
+//relational operators
+static void parse_rel_expr(void) {
+    parse_add_expr();
+
+    while (current_token.type == TOK_REL_MATCHES || current_token.type == TOK_REL_BELIES || current_token.type == TOK_REL_GREATER_THAN || current_token.type == TOK_REL_LESS_THAN || current_token.type == TOK_REL_AT_LEAST || current_token.type == TOK_REL_AT_MOST) {
+        advance_parser(); // consumes relational operator
+        parse_add_expr();
+    }
+}
+
+//logical AND
+static void parse_and_expr(void) {
+    parse_rel_expr();
+
+    while (current_token.type == TOK_LOG_AND) {
+        advance_parser(); // consunmes AND
+        parse_rel_expr();
+    }
+}
+
+static void parse_or_expr(void) {
+    parse_and_expr();
+
+    while (current_token.type == TOK_LOG_OR) {
+        advance_parser(); //consumes OR
+        parse_and_expr();
+    }
+}
+
+//top level expression
+static void parse_expression(void) {
+    parse_or_expr();
+}
