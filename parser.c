@@ -87,12 +87,14 @@ static void parse_input_stmt(void) {
         advance_parser();
         parse_expression();
         
+        //array member input
         if (!match(TOK_KW_OF, "Keyword 'of' expected in member access.")) 
         return;
     
         if(!match(TOK_IDENTIFIER, "Identifier expected after 'of'."))
         return;
     } else {
+        //normal variable: hearken <identifier>
         if (!match(TOK_IDENTIFIER, "Identifier expected after 'hearken'."))
         return;
     }
@@ -103,7 +105,7 @@ static void parse_output_stmt(void) {
     advance_parser();
 
     if (current_token.type == TOK_KW_TALE) {
-        advance_parser();
+        advance_parser(); //consumes "speaks"
     }
 
     parse_expression();
@@ -119,4 +121,31 @@ static void parse_assignment_stmt(void) {
     parse_expression();
 
     match(TOK_PERIOD, "Period (.) expected to terminate statement.");
+}
+
+static void parse_conditional_stmt(void) {
+    advance_parser(); //consume "alas"
+    parse_expression();
+
+    if (!match(TOK__COMMA, "Comma (,) expected to open conditional or loop block.")) 
+    return;
+
+    while (current_token.type != TOK_KW_PERCHANCE && current_token.type != TOK_KW_EXEUNT && current_token.type != TOK_EOF) {
+        parse_statement();
+    }
+
+    if (current_token.type == TOK_KW_PERCHANCE) {
+        advance_parser(); //consumes "perchance"
+        if (!match(TOK_COMMA, "Comma (,) expected to open conditional or loop block."))
+        return;
+
+        while (current_token.type != TOK_KW_EXEUNT &&
+               current_token.type != TOK_EOF) {
+            parse_statement();
+        }
+    }
+    if (!match(TOK_KW_EXEUNT, "'exeunt.' expected to close block.")) 
+    return;
+    
+    match(TOK_PERIOD, "Period (.) expected after 'exeunt'.");
 }
