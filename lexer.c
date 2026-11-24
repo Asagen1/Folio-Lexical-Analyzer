@@ -200,7 +200,7 @@ static int create_file(const char *source){
         }
     } while (tok.type != TOK_EOF);
 
-    printf("File \"Symbol Table.txt\" created");
+    printf("File \"Symbol Table.txt\" created\n\n");
 
     fclose(fp);
     return 1;
@@ -213,7 +213,11 @@ static char peek(Lexer *l){
 
 // consume and return current character 
 static char advance(Lexer *l){
-    return l->src[l->pos++];
+    char c = l->src[l->pos++];
+    if (c == '\n') {
+        l->line++;
+    }
+    return c;
 }
 
 // check if character is whitespace 
@@ -247,7 +251,7 @@ static Token make_token(TokenType type, Lexer *l){
         tok.lexeme[i] = l->src[l->start_pos + i];
     }
     tok.lexeme[i] = '\0';
-    
+    tok.line = l->line;
     return tok;
 }
 
@@ -256,6 +260,7 @@ void lexer_init(Lexer *l, const char *source){
     l->src = source;
     l->pos = 0;
     l->start_pos = 0;
+    l->line = 1;
 }
 
 static int has_extension(const char *f){
@@ -438,6 +443,7 @@ Token get_next_token(Lexer *l) {
                     Token tok;
                     tok.type = TOK_EOF;
                     tok.lexeme[0] = '\0';
+                    tok.line = l->line;
                     return tok;
                 }
                 

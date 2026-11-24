@@ -85,6 +85,7 @@ typedef enum {
 typedef struct {
     TokenType type;
     char lexeme[256];
+    int line;
 } Token;
 
 // Lexer State 
@@ -92,6 +93,7 @@ typedef struct {
     const char *src;
     size_t pos;
     size_t start_pos;
+    int line;
 } Lexer;
 
 
