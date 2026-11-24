@@ -215,3 +215,23 @@ static void parse_unary_expr(void) {
     }
 }
 
+//multiplication, division, modulo
+static void parse_mult_expr(void) {
+    parse_unary_expr;
+
+    while (current_token.type == TOK_OP_MAGNIFIED || current_token.type == TOK_OP_PARTED || current_token.type == TOK_OP_REMNANT) {
+        advance_parser(); // consumes operator
+        parse_unary_expr();
+    }
+}
+
+//addition, subtraction
+static void parse_add_expr(void) {
+    parse_mult_expr();
+
+    while (current_token.type == TOK_OP_COMBINED || current_token.type == WITHOUT) {
+        advance_parser(); //consumes operator
+        parse_mult_expr(); 
+    }
+}
+
