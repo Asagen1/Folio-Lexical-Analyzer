@@ -127,7 +127,7 @@ static void parse_conditional_stmt(void) {
     advance_parser(); //consume "alas"
     parse_expression();
 
-    if (!match(TOK__COMMA, "Comma (,) expected to open conditional or loop block.")) 
+    if (!match(TOK_COMMA, "Comma (,) expected to open conditional or loop block.")) 
     return;
 
     while (current_token.type != TOK_KW_PERCHANCE && current_token.type != TOK_KW_EXEUNT && current_token.type != TOK_EOF) {
