@@ -149,3 +149,19 @@ static void parse_conditional_stmt(void) {
     
     match(TOK_PERIOD, "Period (.) expected after 'exeunt'.");
 }
+
+static void parse_iterative_stmt(void) {
+    advance_parser(); // consume "whilst"
+    parse_expression();
+
+    if (!match(TOK_COMMA, "Comma (,) expected to open conditional or loop block.")) 
+    return;
+
+    while (current_token.type != TOK_KW_EXEUNT && current_token.type != TOK_EOF) {
+        parse_statement();
+    }
+
+    if (!match(TOK_KW_EXEUNT, "'exeunt.' expected to close block.")) return;
+    
+    match(TOK_PERIOD, "Period (.) expected after 'exeunt'.");
+}
