@@ -165,3 +165,53 @@ static void parse_iterative_stmt(void) {
     
     match(TOK_PERIOD, "Period (.) expected after 'exeunt'.");
 }
+
+// expressions 
+
+//operands (literals, identfiers, fraction, member access)
+static void parse_primary_expr(void) {
+    switch (current_token.type) {
+        case TOK_IDENTIFIER:
+        case TOK_TALE_LIT:
+        case TOK_LETTER_LIT:
+        case TOK_AYE:
+        case TOK_NAUGHT:
+            advance_parser();
+            break;
+
+        case TOK_MEASURE_LIT:
+            advance_parser();
+
+            if(current_token.type == TOK_KW_POINT) { //for fractions (3 point 14)
+                advance_parser();
+                match(TOK_MEASURE_LIT, "Measure literal expected after 'point'.");
+            }
+        break;
+
+        case TOK_KW_MEMBER();
+            advance_parser(); //consumes "member"
+            parse_expression();
+            
+            if (!match(TOK_KW_OF, "Keyword 'of' expected in member access.")) 
+            return;
+            match(TOK_IDENTIFIER, "Identifier expected after 'of'.");
+            break;
+        
+        default:
+            printf("Syntax error near '%s' : Valid expression expected.\n"m current_token.type == TOK_EOF ? "<EOF>" : current_token.lexeme);
+            error_count++;
+            panic_recover();
+            break;
+    }
+}
+
+//unary operators
+static void parse_unary_expr(void) {
+    if (current_token.type == TOK_LOG_NAY) {
+        advance_parser(); //consumes 'nay'
+        parse_unary_expr();
+    } else {
+        parse_primary_expr();
+    }
+}
+
