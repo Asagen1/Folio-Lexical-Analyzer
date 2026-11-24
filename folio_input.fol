@@ -11,12 +11,12 @@ block comment spanning
 multiple lines
 END GLOSS]
 
-alas, Romeo matches 42,
+alas Romeo matches 42,
     speak the tale "Success!".
-    exeunt.
 
-perchance Romeo greater than 50,
-    hearken measure Input.
+perchance, Romeo greater than 50
+    hearken Input.
+    exeunt.
 
 whilst Romeo less than 100,
     repeat until Romeo at least 90.
@@ -29,11 +29,11 @@ Romeo became Romeo magnified with 2.
 Romeo became Romeo without 10.
 Romeo became Romeo remnant with 3.
 
-alas, Romeo belies Juliet,
+alas Romeo belies Juliet,
     speak "Different!".
-
-perchance Romeo at most 200 and Flag matches aye or Test,
+perchance, Romeo at most 200 and Flag matches aye or Test
     speak "Complex logic".
+    exeunt.
 
 let legion Numbers hold 5.
 let tale Message be "Hello world".
@@ -43,7 +43,7 @@ speak member 1 of Numbers.
 
 
 [note: Test noise words]
-hark indeed the tale verily speaks with clarity.
+hark indeed the verily speaks with clarity
 
 [note: Error cases below]
 jielian
