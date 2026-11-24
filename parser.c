@@ -188,7 +188,7 @@ static void parse_primary_expr(void) {
             }
         break;
 
-        case TOK_KW_MEMBER();
+        case TOK_KW_MEMBER:
             advance_parser(); //consumes "member"
             parse_expression();
             
@@ -198,7 +198,7 @@ static void parse_primary_expr(void) {
             break;
         
         default:
-            printf("Syntax error near '%s' : Valid expression expected.\n"m current_token.type == TOK_EOF ? "<EOF>" : current_token.lexeme);
+            printf("Syntax error near '%s' : Valid expression expected.\n", current_token.type == TOK_EOF ? "<EOF>" : current_token.lexeme);
             error_count++;
             panic_recover();
             break;
@@ -217,7 +217,7 @@ static void parse_unary_expr(void) {
 
 //multiplication, division, modulo
 static void parse_mult_expr(void) {
-    parse_unary_expr;
+    parse_unary_expr();
 
     while (current_token.type == TOK_OP_MAGNIFIED || current_token.type == TOK_OP_PARTED || current_token.type == TOK_OP_REMNANT) {
         advance_parser(); // consumes operator
@@ -229,7 +229,7 @@ static void parse_mult_expr(void) {
 static void parse_add_expr(void) {
     parse_mult_expr();
 
-    while (current_token.type == TOK_OP_COMBINED || current_token.type == WITHOUT) {
+    while (current_token.type == TOK_OP_COMBINED || current_token.type == TOK_OP_WITHOUT) {
         advance_parser(); //consumes operator
         parse_mult_expr(); 
     }
