@@ -365,9 +365,7 @@ static void parse_iterative_stmt(void) {
     } else if (current_token.type == TOK_KW_REPEAT) {
         advance_parser(); // consumes "repeat"
 
-        if (current_token.type == TOK_COMMA) {
-            advance_parser();
-        }
+        if (!match(TOK_COMMA, "Comma (,) expected to open conditional or loop block.")) return;
 
         while (current_token.type != TOK_KW_UNTIL && current_token.type != TOK_EOF) {
             parse_statement();

@@ -19,7 +19,7 @@ perchance, Romeo greater than 50,
     exeunt.
 
 repeat,
-    speak "Rejoice!"
+    speak "Rejoice!".
 until Romeo at least 90.
 
 whilst Romeo less than 100,
