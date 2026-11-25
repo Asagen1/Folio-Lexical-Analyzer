@@ -14,12 +14,16 @@ END GLOSS]
 alas Romeo matches 42,
     speak the tale "Success!".
 
-perchance, Romeo greater than 50
+perchance, Romeo greater than 50,
     hearken Input.
     exeunt.
 
+repeat speak "Rejoice!",
+    until Romeo at least 90.
+
 whilst Romeo less than 100,
-    repeat until Romeo at least 90.
+    Romeo became Romeo combined with 1.
+    exeunt.
 
 let truth Flag be aye.
 let truth Test be naught.
