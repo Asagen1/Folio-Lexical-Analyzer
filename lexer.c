@@ -54,6 +54,7 @@ typedef enum {
     //G 
     STATE_G, STATE_GR, STATE_GRE, STATE_GREA, STATE_GREAT, STATE_GREATE, STATE_GREATER,
     STATE_GREATER_SPACE, STATE_GREATER_T, STATE_GREATER_TH, STATE_GREATER_THA, STATE_GREATER_THAN,
+    STATE_GRO, STATE_GROU, STATE_GROUN, STATE_GROUND, STATE_GROUNDE, STATE_GROUNDED, //floor division
     
     //H 
     STATE_H,
@@ -113,7 +114,9 @@ typedef enum {
     STATE_U, STATE_UN, STATE_UNT, STATE_UNTI, STATE_UNTIL,
     
     //V 
-    STATE_V, STATE_VE, STATE_VER, STATE_VERI, STATE_VERIL, STATE_VERILY,
+    STATE_V, 
+    STATE_VA, STATE_VAU, STATE_VAUL, STATE_VAULT, STATE_VAULTE, STATE_VAULTED, // ceiling division
+    STATE_VE, STATE_VER, STATE_VERI, STATE_VERIL, STATE_VERILY,
     
     //W 
     STATE_W,
@@ -330,6 +333,8 @@ static const char *token_classification(TokenType type) {
         case TOK_OP_MAGNIFIED:
         case TOK_OP_PARTED:
         case TOK_OP_REMNANT:
+        case TOK_OP_VAULTED:
+        case TOK_OP_GROUNDED:
             return "Arithmetic operator";
 
         case TOK_REL_MATCHES:
@@ -402,6 +407,8 @@ const char *token_type_to_string(TokenType type) {
         case TOK_OP_MAGNIFIED: return "TOK_OP_MAGNIFIED";
         case TOK_OP_PARTED: return "TOK_OP_PARTED";
         case TOK_OP_REMNANT: return "TOK_OP_REMNANT";
+        case TOK_OP_VAULTED: return "TOK_OP_VAULTED";
+        case TOK_OP_GROUNDED: return "TOK_OP_GROUNDED";
         case TOK_REL_MATCHES: return "TOK_REL_MATCHES";
         case TOK_REL_BELIES: return "TOK_REL_BELIES";
         case TOK_REL_GREATER_THAN: return "TOK_REL_GREATER_THAN";
@@ -1002,10 +1009,14 @@ Token get_next_token(Lexer *l) {
                 if (peek(l) == 'r') { advance(l); state = STATE_GR; }
                 else { state = STATE_ERROR; }
                 break;
+                
             case STATE_GR:
-                if (peek(l) == 'e') { advance(l); state = STATE_GRE; }
+                c = peek(l);
+                if (c == 'e') { advance(l); state = STATE_GRE; }
+                else if (c == 'o') { advance(l); state = STATE_GRO; }
                 else { state = STATE_ERROR; }
                 break;
+
             case STATE_GRE:
                 if (peek(l) == 'a') { advance(l); state = STATE_GREA; }
                 else { state = STATE_ERROR; }
@@ -1047,6 +1058,36 @@ Token get_next_token(Lexer *l) {
                 break;
             case STATE_GREATER_THAN:
                 if (is_delimiter(peek(l))) { return make_token(TOK_REL_GREATER_THAN, l); }
+                else { state = STATE_ERROR; }
+                break;
+
+            case STATE_GRO:
+                if (peek(l) == 'u') { advance(l); state = STATE_GROU; }
+                else { state = STATE_ERROR; }
+                break;
+
+            case STATE_GROU:
+                if (peek(l) == 'n') { advance(l); state = STATE_GROUN; }
+                else { state = STATE_ERROR; }
+                break;
+
+            case STATE_GROUN:
+                if (peek(l) == 'd') { advance(l); state = STATE_GROUND; }
+                else { state = STATE_ERROR; }
+                break;
+            
+            case STATE_GROUND:
+                if (peek(l) == 'e') { advance(l); state = STATE_GROUNDE; }
+                else { state = STATE_ERROR; }
+                break;
+
+            case STATE_GROUNDE:
+                if (peek(l) == 'd') { advance(l); state = STATE_GROUNDED; }
+                else { state = STATE_ERROR; }
+                break;
+
+            case STATE_GROUNDED:
+                if(is_delimiter(peek(l))) { return make_token(TOK_OP_GROUNDED, l); }
                 else { state = STATE_ERROR; }
                 break;
             
@@ -1623,9 +1664,12 @@ Token get_next_token(Lexer *l) {
             
             // verily (noise)
             case STATE_V:
-                if (peek(l) == 'e') { advance(l); state = STATE_VE; }
+                c = peek(l);
+                if (c == 'e') { advance(l); state = STATE_VE; }
+                else if (c == 'a') { advance(l); state = STATE_VA; }
                 else { state = STATE_ERROR; }
                 break;
+
             case STATE_VE:
                 if (peek(l) == 'r') { advance(l); state = STATE_VER; }
                 else { state = STATE_ERROR; }
@@ -1650,7 +1694,38 @@ Token get_next_token(Lexer *l) {
                     state = STATE_ERROR;
                 }
                 break;
+
+            case STATE_VA:
+                if(peek(l) == 'u') { advance(l); state = STATE_VAU; }
+                else { state = STATE_ERROR; }
+                break;
             
+            case STATE_VAU:
+                if(peek(l) == 'l') { advance(l); state = STATE_VAUL; }
+                else { state = STATE_ERROR; }
+                break;
+                
+            case STATE_VAUL:
+                if(peek(l) == 't') { advance(l); state = STATE_VAULT; }
+                else { state = STATE_ERROR; }
+                break;
+                
+            case STATE_VAULT:
+                if(peek(l) == 'e') { advance(l); state = STATE_VAULTE; }
+                else { state = STATE_ERROR; }
+                break;
+                
+            case STATE_VAULTE:
+                if(peek(l) == 'd') { advance(l); state = STATE_VAULTED; }
+                else { state = STATE_ERROR; }
+                break;
+                
+            case STATE_VAULTED:
+                // skip and reset to start
+                if (is_delimiter(peek(l))) { return make_token(TOK_OP_VAULTED, l);} 
+                else { state = STATE_ERROR; }
+                break;
+                
             // w
             case STATE_W:
                 c = peek(l);

@@ -55,6 +55,8 @@ typedef enum {
     TOK_OP_MAGNIFIED,
     TOK_OP_PARTED,
     TOK_OP_REMNANT,
+    TOK_OP_VAULTED,
+    TOK_OP_GROUNDED,
     
     // Relational Operators 
     TOK_REL_MATCHES,
