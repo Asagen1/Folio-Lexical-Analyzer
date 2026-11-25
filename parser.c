@@ -7,6 +7,7 @@ static FILE *st_file = NULL;   // opened "Symbol Table.txt"
 static Token current_token;   // current token that is being checked
 static int error_count = 0;
 static int row_index = 0; // tracks the row of symbol table
+static int in_panic = 0;
 
 // Forward declarations
 static void parse_program(void);
@@ -116,6 +117,7 @@ static void advance_parser(void) {
 
 // If a syntax error occurs, skip tokens until a safe delimiter is found
 static void panic_recover(void) {
+    in_panic = 1;
     while (current_token.type != TOK_PERIOD &&
            current_token.type != TOK_COMMA &&
            current_token.type != TOK_KW_EXEUNT &&
@@ -135,9 +137,12 @@ static void panic_recover(void) {
 // Checks if current_token matches the expected grammar rule
 static int match(TokenType expected, const char *err_msg) {
     if (current_token.type == expected) {
+        in_panic = 0;
         advance_parser(); // moves to next token if it matches
         return 1;
     }
+
+    if (in_panic) return 0;
 
     printf("Syntax error on line %d near '%s': %s\n", current_token.line, current_token.type == TOK_EOF ? "<EOF>" : current_token.lexeme, err_msg);
     error_count++;
@@ -188,6 +193,7 @@ static void parse_program(void) {
 
 // Checks first token and routes to its corresponding grammar rule
 static void parse_statement(void) {
+    in_panic = 0;
     switch (current_token.type) {
         case TOK_KW_LET:
             parse_declaration_stmt();
@@ -317,6 +323,7 @@ static void parse_conditional_stmt(void) {
 
     while (current_token.type == TOK_KW_PERCHANCE) {
         advance_parser(); // consumes "perchance"
+        if (!match(TOK_COMMA, "Comma (,) expected after 'perchance'.")) return;
         parse_expression();
         if (!match(TOK_COMMA, "Comma (,) expected to open conditional or loop block.")) return;
 

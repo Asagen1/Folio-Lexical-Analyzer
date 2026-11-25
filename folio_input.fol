@@ -18,8 +18,9 @@ perchance, Romeo greater than 50,
     hearken Input.
     exeunt.
 
-repeat speak "Rejoice!",
-    until Romeo at least 90.
+repeat,
+    speak "Rejoice!"
+until Romeo at least 90.
 
 whilst Romeo less than 100,
     Romeo became Romeo combined with 1.
@@ -37,7 +38,7 @@ Romeo became Romeo grounded 3.
 
 alas Romeo belies Juliet,
     speak "Different!".
-perchance, Romeo at most 200 and Flag matches aye or Test
+perchance, Romeo at most 200 and Flag matches aye or Test,
     speak "Complex logic".
     exeunt.
 
