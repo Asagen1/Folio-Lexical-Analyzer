@@ -30,9 +30,13 @@ static void advance_parser(void) {
     while (pos < symbol_table_count) {
         current_token = symbol_table[pos++];
 
-        if (current_token.type == TOK_NOISE ||
-            current_token.type == TOK_COMMENT_LINE ||
-            current_token.type == TOK_COMMENT_BLOCK) {
+        if (current_token.type == TOK_NOISE               ||
+            current_token.type == TOK_COMMENT_OPENER      ||
+            current_token.type == TOK_COMMENT_LINE        ||
+            current_token.type == TOK_COMMENT_CLOSER      ||
+            current_token.type == TOK_COMMENT_BLOCK_OPENER ||
+            current_token.type == TOK_COMMENT_BLOCK       ||
+            current_token.type == TOK_COMMENT_BLOCK_CLOSER) {
             continue; // ignore comments and noise words
         }
         return;
@@ -46,6 +50,7 @@ static void panic_recover(void) {
            current_token.type != TOK_COMMA &&
            current_token.type != TOK_KW_EXEUNT &&
            current_token.type != TOK_KW_PERCHANCE &&
+           current_token.type != TOK_KW_OTHERWISE &&
            current_token.type != TOK_KW_UNTIL &&
            current_token.type != TOK_EOF) {
         advance_parser();
@@ -220,13 +225,27 @@ static void parse_conditional_stmt(void) {
     if (!match(TOK_COMMA, "Comma (,) expected to open conditional or loop block.")) return;
 
     while (current_token.type != TOK_KW_PERCHANCE &&
+           current_token.type != TOK_KW_OTHERWISE &&
            current_token.type != TOK_KW_EXEUNT &&
            current_token.type != TOK_EOF) {
         parse_statement();
     }
 
-    if (current_token.type == TOK_KW_PERCHANCE) {
+    while (current_token.type == TOK_KW_PERCHANCE) {
         advance_parser(); // consumes "perchance"
+        parse_expression();
+        if (!match(TOK_COMMA, "Comma (,) expected to open conditional or loop block.")) return;
+
+        while (current_token.type != TOK_KW_PERCHANCE &&
+               current_token.type != TOK_KW_OTHERWISE &&
+               current_token.type != TOK_KW_EXEUNT &&
+               current_token.type != TOK_EOF) {
+            parse_statement();
+        }
+    }
+
+    if (current_token.type == TOK_KW_OTHERWISE) {
+        advance_parser(); // consumes "otherwise"
         if (!match(TOK_COMMA, "Comma (,) expected to open conditional or loop block.")) return;
 
         while (current_token.type != TOK_KW_EXEUNT &&
