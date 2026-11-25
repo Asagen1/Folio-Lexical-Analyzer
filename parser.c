@@ -70,7 +70,7 @@ static int match(TokenType expected, const char *err_msg) {
     return 0;
 }
 
-static int is_data_type(TokenType t) {
+static int is_data_type(TokenType t) { //for declaration statement
     return (t == TOK_KW_MEASURE || t == TOK_KW_FRACTION ||
             t == TOK_KW_TRUTH   || t == TOK_KW_TALE     ||
             t == TOK_KW_LETTER);
@@ -118,6 +118,9 @@ static void parse_statement(void) {
         case TOK_KW_WHILST:
             parse_iterative_stmt();
             break;
+        case TOK_KW_REPEAT:
+            parse_iterative_stmt();
+            break;
         case TOK_IDENTIFIER:
             parse_assignment_stmt();
             break;
@@ -142,6 +145,20 @@ static void parse_statement(void) {
 
 static void parse_declaration_stmt(void) {
     advance_parser(); // consumes "let"
+
+    if (current_token.type == TOK_KW_LEGION){
+        advance_parser(); //consumes "legion"
+
+        if (!match(TOK_IDENTIFIER, "Identifier expected after 'legion'."))
+        return;
+
+        if (!match(TOK_KW_HOLD, "Keyword 'hold' expected after 'legion <identifier>'."))
+        return;
+
+        parse_expression();
+        match(TOK_PERIOD, "Period (.) expected to terminate statement.");
+        return;
+    }
 
     if (is_data_type(current_token.type)) {
         advance_parser();
@@ -223,7 +240,7 @@ static void parse_conditional_stmt(void) {
 }
 
 static void parse_iterative_stmt(void) {
-    advance_parser(); // consumes "whilst"
+    if (current_token.type == TOK_KW_WHILST) {advance_parser(); // consumes "whilst"
     parse_expression();
 
     if (!match(TOK_COMMA, "Comma (,) expected to open conditional or loop block.")) return;
@@ -235,6 +252,22 @@ static void parse_iterative_stmt(void) {
 
     if (!match(TOK_KW_EXEUNT, "'exeunt.' expected to close block.")) return;
     match(TOK_PERIOD, "Period (.) expected after 'exeunt'.");
+    } else if (current_token.type == TOK_KW_REPEAT) {
+        advance_parser(); // consumes "repeat"
+
+        if (current_token.type == TOK_COMMA) {
+            advance_parser();
+        }
+
+        while (current_token.type != TOK_KW_UNTIL && current_token.type != TOK_EOF) {
+            parse_statement();
+        }
+
+        if (!match(TOK_KW_UNTIL, "Keyword 'until' expected to terminate repeat loop."))
+        return;
+        parse_expression();
+        match(TOK_PERIOD, "Period (.) expected to terminate statement.");
+    }
 }
 
 
@@ -297,7 +330,9 @@ static void parse_mult_expr(void) {
 
     while (current_token.type == TOK_OP_MAGNIFIED ||
            current_token.type == TOK_OP_PARTED    ||
-           current_token.type == TOK_OP_REMNANT) {
+           current_token.type == TOK_OP_REMNANT   ||
+           current_token.type == TOK_OP_GROUNDED  ||
+           current_token.type == TOK_OP_VAULTED) {
         advance_parser(); // consumes operator
         parse_unary_expr();
     }
