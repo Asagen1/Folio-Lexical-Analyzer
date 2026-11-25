@@ -88,6 +88,7 @@ typedef enum {
     
     //O 
     STATE_O, STATE_OR, STATE_OF,
+    STATE_OT, STATE_OTH, STATE_OTHE, STATE_OTHER, STATE_OTHERW, STATE_OTHERWI, STATE_OTHERWIS, STATE_OTHERWISE,
     
     //P 
     STATE_P,
@@ -264,6 +265,7 @@ void lexer_init(Lexer *l, const char *source){
     l->pos = 0;
     l->start_pos = 0;
     l->line = 1;
+    l->comment_mode = COMMENT_NONE;
 }
 
 static int has_extension(const char *f){
@@ -315,6 +317,7 @@ static const char *token_classification(TokenType type) {
         case TOK_KW_REPEAT:
         case TOK_KW_UNTIL:
         case TOK_KW_EXEUNT:
+        case TOK_KW_OTHERWISE:
             return "Keyword (control flow)";
         
         case TOK_KW_HEARKEN:
@@ -350,15 +353,22 @@ static const char *token_classification(TokenType type) {
         case TOK_LOG_NAY:
             return "Logical operator";
         
-        
-        case TOK_NOISE:
-            return "Noise word";
+        case TOK_COMMENT_OPENER:
+        case TOK_COMMENT_BLOCK_OPENER:
+            return "Comment (opener)";
+
+        case TOK_COMMENT_CLOSER:
+        case TOK_COMMENT_BLOCK_CLOSER:
+            return "Comment (closer)";
 
         case TOK_COMMENT_LINE:
             return "Comment (line)";
 
         case TOK_COMMENT_BLOCK:
             return "Comment (block)";
+
+        case TOK_NOISE:
+            return "Noise word";
 
         case TOK_EOF:
             return "Special (EOF)";
@@ -397,6 +407,7 @@ const char *token_type_to_string(TokenType type) {
         case TOK_KW_REPEAT: return "TOK_KW_REPEAT";
         case TOK_KW_UNTIL: return "TOK_KW_UNTIL";
         case TOK_KW_EXEUNT: return "TOK_KW_EXEUNT";
+        case TOK_KW_OTHERWISE: return "STATE_OTHERWISE";
         case TOK_KW_HEARKEN: return "TOK_KW_HEARKEN";
         case TOK_KW_SPEAK: return "TOK_KW_SPEAK";
         case TOK_KW_LET: return "TOK_KW_LET";
@@ -419,8 +430,12 @@ const char *token_type_to_string(TokenType type) {
         case TOK_LOG_OR: return "TOK_LOG_OR";
         case TOK_LOG_NAY: return "TOK_LOG_NAY";
         case TOK_NOISE: return "TOK_NOISE";
-        case TOK_COMMENT_LINE: return "TOK_COMMENT_LINE";
-        case TOK_COMMENT_BLOCK: return "TOK_COMMENT_BLOCK";
+        case TOK_COMMENT_OPENER:       return "TOK_COMMENT_OPENER";
+        case TOK_COMMENT_LINE:         return "TOK_COMMENT_LINE";
+        case TOK_COMMENT_CLOSER:       return "TOK_COMMENT_CLOSER";
+        case TOK_COMMENT_BLOCK:        return "TOK_COMMENT_BLOCK";
+        case TOK_COMMENT_BLOCK_OPENER: return "TOK_COMMENT_BLOCK_OPENER";
+        case TOK_COMMENT_BLOCK_CLOSER: return "TOK_COMMENT_BLOCK_CLOSER";
         case TOK_EOF: return "TOK_EOF";
         case TOK_ERROR: return "TOK_ERROR";
         default: return "UNKNOWN";
@@ -431,6 +446,7 @@ const char *token_type_to_string(TokenType type) {
 Token get_next_token(Lexer *l) {
     State state = STATE_START;
     char c;
+    size_t end_candidate_pos = 0;
     
     while (1) {
         c = peek(l);
@@ -438,6 +454,41 @@ Token get_next_token(Lexer *l) {
         switch (state) {
             case STATE_START:
                 l->start_pos = l->pos;
+
+                if (l->comment_mode == COMMENT_INLINE) {
+                    if (c == '\0') {
+                        l->comment_mode = COMMENT_NONE;
+                        return make_token(TOK_ERROR, l);
+                    }
+                    if (c == ']') {
+                        advance(l);
+                        l->comment_mode = COMMENT_NONE;
+                        return make_token(TOK_COMMENT_CLOSER, l);
+                    }
+                    if (c == '\n') {
+                        advance(l);
+                        l->comment_mode = COMMENT_NONE;
+                        return make_token(TOK_COMMENT_CLOSER, l);
+                    }
+                    state = STATE_INLINE_COMMENT;
+                    break;
+                }
+
+                if (l->comment_mode == COMMENT_BLOCK) {
+                    if (c == '\0') {
+                        l->comment_mode = COMMENT_NONE;
+                        return make_token(TOK_ERROR, l);
+                    }
+                    if (to_lower(c) == 'e') {
+                        end_candidate_pos = l->pos;
+                        state = STATE_BLOCK_E;
+                        advance(l);
+                        break;
+                    }
+                    state = STATE_BLOCK_COMMENT;
+                    break;
+                }
+
                 // Skip whitespace 
                 while (is_space(c)) {
                     advance(l);
@@ -634,17 +685,16 @@ Token get_next_token(Lexer *l) {
                 else { state = STATE_ERROR; }
                 break;
             case STATE_NOTE_E:
-                if (peek(l) == ':') { advance(l); state = STATE_INLINE_COMMENT; }
+                if (peek(l) == ':') { advance(l); l->comment_mode = COMMENT_INLINE; return make_token(TOK_COMMENT_OPENER, l); }
                 else { state = STATE_ERROR; }
                 break;
             
             case STATE_INLINE_COMMENT:
                 c = peek(l);
                 if (c == '\0') {
-                    // Unterminated inline comment at EOF 
+                    l->comment_mode = COMMENT_NONE;
                     return make_token(TOK_ERROR, l);
                 } else if (c == ']' || c == '\n') {
-                    if (c == ']') advance(l);
                     // Line comment ends at ']' or end of line
                     return make_token(TOK_COMMENT_LINE, l);
                 } else {
@@ -670,16 +720,17 @@ Token get_next_token(Lexer *l) {
                 else { state = STATE_ERROR; }
                 break;
             case STATE_GLOSS_S2:
-                if (peek(l) == ':') { advance(l); state = STATE_BLOCK_COMMENT; }
+                if (peek(l) == ':') { advance(l); l->comment_mode = COMMENT_BLOCK; return make_token(TOK_COMMENT_BLOCK_OPENER, l); }
                 else { state = STATE_ERROR; }
                 break;
             
             case STATE_BLOCK_COMMENT:
                 c = to_lower(peek(l));
                 if (c == '\0') {
-                    // Unterminated block comment 
+                    l->comment_mode = COMMENT_BLOCK;
                     return make_token(TOK_ERROR, l);
                 } else if (c == 'e') {
+                    end_candidate_pos = l->pos;
                     advance(l);
                     state = STATE_BLOCK_E;
                 } else {
@@ -727,8 +778,13 @@ Token get_next_token(Lexer *l) {
             case STATE_BLOCK_S2:
                 if (peek(l) == ']') {
                     advance(l);
-                    // Block comment closed by 'end gloss]'
-                    return make_token(TOK_COMMENT_BLOCK, l);
+                    if (l->start_pos < end_candidate_pos) {
+                        l->pos = end_candidate_pos; 
+                        return make_token(TOK_COMMENT_BLOCK, l);
+                    }
+                    l->comment_mode = COMMENT_NONE;
+
+                    return make_token(TOK_COMMENT_BLOCK_CLOSER, l);
                 } else {
                     state = STATE_BLOCK_COMMENT;
                 }
@@ -1415,8 +1471,10 @@ Token get_next_token(Lexer *l) {
             
             // O
             case STATE_O:
-                if (peek(l) == 'r') { advance(l); state = STATE_OR; }
-                else if(peek(l) == 'f'){ advance(l); state = STATE_OF; }
+                c = peek(l);
+                if (c == 'r') { advance(l); state = STATE_OR; }
+                else if(c == 'f'){ advance(l); state = STATE_OF; }
+                else if(c == 't'){ advance(l); state = STATE_OT; }
                 else { state = STATE_ERROR; }   
                 break;
             case STATE_OR:
@@ -1427,7 +1485,48 @@ Token get_next_token(Lexer *l) {
                 if (is_delimiter(peek(l))){ return make_token(TOK_KW_OF, l);}
                 else { state = STATE_ERROR; }
                 break;
+
+            case STATE_OT:
+                if(peek(l) == 'h'){ advance(l); state = STATE_OTH; }
+                else { state = STATE_ERROR; }
+                break;
+
+            case STATE_OTH:
+                if(peek(l) == 'e'){ advance(l); state = STATE_OTHE; }
+                else { state = STATE_ERROR; }
+                break;
             
+            case STATE_OTHE:
+                if(peek(l) == 'r'){ advance(l); state = STATE_OTHER; }
+                else { state = STATE_ERROR; }
+                break;
+
+            case STATE_OTHER:
+                if(peek(l) == 'w'){ advance(l); state = STATE_OTHERW; }
+                else { state = STATE_ERROR; }
+                break;
+
+            case STATE_OTHERW:
+                if(peek(l) == 'i'){ advance(l); state = STATE_OTHERWI; }
+                else { state = STATE_ERROR; }
+                break;
+                
+            case STATE_OTHERWI:
+                if(peek(l) == 's'){ advance(l); state = STATE_OTHERWIS; }
+                else { state = STATE_ERROR; }
+                break;
+                
+            case STATE_OTHERWIS:
+                if(peek(l) == 'e'){ advance(l); state = STATE_OTHERWISE; }
+                else { state = STATE_ERROR; }
+                break;
+
+                
+            case STATE_OTHERWISE:
+                if(is_delimiter(peek(l))){ return make_token(TOK_KW_OTHERWISE, l); }
+                else { state = STATE_ERROR; }
+                break;
+
             // P
             case STATE_P:
                 c = peek(l);

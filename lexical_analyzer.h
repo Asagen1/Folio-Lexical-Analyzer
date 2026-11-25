@@ -35,6 +35,7 @@ typedef enum {
     // Control Flow 
     TOK_KW_ALAS,
     TOK_KW_PERCHANCE,
+    TOK_KW_OTHERWISE,
     TOK_KW_WHILST,
     TOK_KW_REPEAT,
     TOK_KW_UNTIL,
@@ -79,9 +80,21 @@ typedef enum {
     TOK_NOISE,
 
     // Comments
-    TOK_COMMENT_LINE,
-    TOK_COMMENT_BLOCK
+    TOK_COMMENT_OPENER, // [note:
+    TOK_COMMENT_LINE, 
+    TOK_COMMENT_CLOSER, // ]
+    TOK_COMMENT_BLOCK,
+    TOK_COMMENT_BLOCK_OPENER, // [gloss
+    TOK_COMMENT_BLOCK_CLOSER // end gloss]
+
 } TokenType;
+
+// Comment shi
+typedef enum {
+    COMMENT_NONE = 0,
+    COMMENT_INLINE,
+    COMMENT_BLOCK
+} CommentMode;
 
 // Token Structure 
 typedef struct {
@@ -96,6 +109,7 @@ typedef struct {
     size_t pos;
     size_t start_pos;
     int line;
+    CommentMode comment_mode;
 } Lexer;
 
 
