@@ -1,9 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "syntax_analyzer.h"
 
-static int pos = 0;           // current index in symbol_table[]
+static FILE *st_file = NULL;   // opened "Symbol Table.txt"
 static Token current_token;   // current token that is being checked
 static int error_count = 0;
+static int row_index = 0; // tracks the row of symbol table
 
 // Forward declarations
 static void parse_program(void);
@@ -25,23 +28,90 @@ static void parse_mult_expr(void);
 static void parse_unary_expr(void);
 static void parse_primary_expr(void);
 
+//removes extra spaces/newlines in the symbol table 
+static void trim(char *str) {
+    size_t len = strlen(str);
+    while (len > 0 && (str[len - 1] == ' ' || str[len - 1] == '\t' ||
+                       str[len - 1] == '\r' || str[len - 1] == '\n')) {
+        str[--len] = '\0';
+    }
+
+    size_t start = 0;
+    while (str[start] == ' ' || str[start] == '\t') {
+        start++;
+    }
+
+    if (start > 0) {
+        memmove(str, str + start, strlen(str + start) + 1);
+    }
+
+}
+
+//converts string from file to its token type in enum
+static TokenType string_to_token_type(const char *str) {
+    //chcecks every enum value
+    for (int t = TOK_PERIOD; t <= TOK_COMMENT_BLOCK_CLOSER; t++) {
+        if (strcmp(str, token_type_to_string((TokenType)t)) == 0) {
+            return (TokenType)t; // if match found return the value
+        }
+    }
+    return TOK_ERROR; // fallback if unknown
+}
+
 // Moves to the next token in symbol_table[], skipping noise & comments
 static void advance_parser(void) {
-    while (pos < symbol_table_count) {
-        current_token = symbol_table[pos++];
+    char line[1024];
 
-        if (current_token.type == TOK_NOISE               ||
-            current_token.type == TOK_COMMENT_OPENER      ||
-            current_token.type == TOK_COMMENT_LINE        ||
-            current_token.type == TOK_COMMENT_CLOSER      ||
-            current_token.type == TOK_COMMENT_BLOCK_OPENER ||
-            current_token.type == TOK_COMMENT_BLOCK       ||
-            current_token.type == TOK_COMMENT_BLOCK_CLOSER) {
-            continue; // ignore comments and noise words
+    //reads lines until it find a non-noise/non-comment token or EOF
+    while (st_file != NULL && fgets(line,sizeof(line), st_file) != NULL) {
+        //finds the '|' separating the token type and lexeme
+        char *bar1 = strchr(line, '|');
+        if (!bar1) continue;
+
+        //looks up this row's line number in .fol 
+        int tok_line = (row_index < symbol_table_count) ? symbol_table[row_index].line : 1;
+        row_index++;
+
+    //extract token type
+    char type_str[64];
+    size_t len = (size_t)(bar1 - line); //counts the length of the token type before '|'
+    if (len >= sizeof(type_str)) len = sizeof(type_str) - 1;
+    strncpy(type_str, line, len);
+    type_str[len] = '\0'; 
+    trim(type_str);
+
+    //extract lexeme
+    char lex_str[256];
+    strncpy(lex_str, bar1 + 1, sizeof(lex_str) - 1);
+    lex_str[sizeof(lex_str) - 1] = '\0';
+    trim(lex_str);
+
+    //convert strings to their token types
+    TokenType type = string_to_token_type(type_str);
+
+    //skip noise words and comment tokens
+
+    if (type == TOK_NOISE                ||
+            type == TOK_COMMENT_OPENER       ||
+            type == TOK_COMMENT_LINE         ||
+            type == TOK_COMMENT_CLOSER       ||
+            type == TOK_COMMENT_BLOCK_OPENER ||
+            type == TOK_COMMENT_BLOCK        ||
+            type == TOK_COMMENT_BLOCK_CLOSER) {
+            continue;
         }
-        return;
+
+    //store the token type in current_token
+    current_token.type = type;
+    strcpy(current_token.lexeme, lex_str);
+    current_token.line = tok_line;
+    return;
     }
+
+    // fgets() returned NULL -> reached the end of the Symbol Table file
     current_token.type = TOK_EOF;
+    current_token.lexeme[0] = '\0';
+    current_token.line = (row_index < symbol_table_count) ? symbol_table[row_index].line : 1;
 }
 
 // If a syntax error occurs, skip tokens until a safe delimiter is found
@@ -84,13 +154,24 @@ static int is_data_type(TokenType t) { //for declaration statement
 
 // Entry point called from folio.c
 void parser(const char *symbol_table_file) {
-    (void)symbol_table_file;
+    st_file = fopen(symbol_table_file, "r");
 
-    pos = 0;
-    error_count = 0;
-    advance_parser(); // load the first non-noise, non-comment token
-    parse_program();
+    if (st_file == NULL) { //checks if file exists
+        perror(symbol_table_file);
+        return;
+    }
 
+    //skips the two header lines
+    char header[1024];
+    fgets(header, sizeof(header), st_file);
+    fgets(header, sizeof(header), st_file);
+
+    error_count = 0;  
+    row_index = 0;
+
+    advance_parser(); //checks first token from file
+    parse_program(); //validates all statements until TOK_EOF
+    fclose(st_file);
     if (error_count == 0) {
         printf("\nSyntax analysis passed with 0 errors\n");
     } else {
@@ -135,11 +216,14 @@ static void parse_statement(void) {
                    current_token.type == TOK_EOF ? "<EOF>" : current_token.lexeme);
             error_count++;
             {
-                int prev_pos = pos;
                 panic_recover();
                 // contiunues if stopped by a delimiter
-                if (pos == prev_pos && current_token.type != TOK_EOF) {
-                    advance_parser();
+                if (current_token.type == TOK_COMMA    ||
+                current_token.type == TOK_KW_EXEUNT    ||
+                current_token.type == TOK_KW_PERCHANCE ||
+                current_token.type == TOK_KW_OTHERWISE ||
+                current_token.type == TOK_KW_UNTIL) {
+                advance_parser();
                 }
             }
             break;
